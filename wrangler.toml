@@ -14,3 +14,11 @@ kv_namespaces = [
 # wrangler.toml (wrangler v3.88.0^)
 [observability.logs]
 enabled = true
+
+[[kv_namespaces]]
+binding = "CODES"
+id = "your_codes_namespace_id"
+
+[[kv_namespaces]]
+binding = "ADMIN_DATA"
+id = "your_admin_data_namespace_id"
