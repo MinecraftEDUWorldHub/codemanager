@@ -5,7 +5,7 @@
   "account_id": "your_account_id_here",
   "observability": {
   "enabled": true
-  "workers_dev" : true,
+  "workers_dev": true,
   "compatibility_date": "2025-07-25",
   "assets": {
     "directory": "./dist"
