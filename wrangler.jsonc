@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "codemanager",
-  "main": "src/index.html",
+  "main": "src/index.js",
   "compatibility_date": "2025-02-04",
   "observability": {
     "enabled": true
