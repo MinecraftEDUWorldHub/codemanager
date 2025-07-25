@@ -2,9 +2,7 @@
   "name": "codemanager",
   "main": "worker.js",
   "type": "javascript",
-  "account_id": "your_account_id_here",
-  "observability": {
-  "enabled": true
+  "account_id": "ab9aa98b3b4a7bb160a39c16be0fabe1",
   "compatibility_date": "2025-07-25",
   "assets": {
     "directory": "./dist"
@@ -18,8 +16,8 @@
       "binding": "ADMIN_DATA",
       "id": "02282a84edbe421c98c057b131552347"
     }
-  ]
+  ],
+  "observability": {
+    "enabled": true
+  }
 }
-
-
- 
