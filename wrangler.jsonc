@@ -6,6 +6,12 @@
     "enabled": true
   },
 
+  {
+  "assets": {
+    "directory": "./dist"
+  }
+}
+
   // Add this to your wrangler.jsonc
   "kv_namespaces": [
     {
