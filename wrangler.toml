@@ -3,7 +3,7 @@ type = "javascript"
 compatibility_date = "2025-07-25"
 
 kv_namespaces = [
-  { binding = "ADMIN_DATA", id = "your_kv_namespace_id_here" }
+  { binding = "ADMIN_DATA", id = "02282a84edbe421c98c057b131552347" }
 ]
 
 # Uncomment and configure if you want to deploy frontend from Worker
