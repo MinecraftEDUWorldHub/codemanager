@@ -1,11 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Minecraft World Code Manager</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+    .container { max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    h1, h2 { text-align: center; }
+    .world-entry { background: #f9f9f9; margin-bottom: 20px; padding: 15px; border-radius: 10px; }
+    .world-code { background: #e0e0e0; padding: 10px; font-family: monospace; border-radius: 6px; white-space: pre-wrap; }
+    .login { max-width: 400px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    input, button { width: 100%; padding: 10px; margin-top: 15px; border: 1px solid #ccc; border-radius: 6px; }
+    button { background: #4CAF50; color: white; cursor: pointer; }
+    button:hover { background: #45a049; }
+  </style>
+</head>
+<body>
+<div class="login" id="login-container">
+  <h2>Admin Login</h2>
+  <input type="password" id="password" placeholder="Enter admin password" />
+  <button onclick="login()">Login</button>
+</div>
+
+<div class="container" id="main-container" style="display:none;">
+  <h1>World Code Manager</h1>
+  <div id="worlds-container"></div>
+  <button onclick="logout()" style="margin-top:20px;">Logout</button>
+</div>
+
 <script>
+  const WORKER_URL = 'https://codemanager.minecraftworld.workers.dev';
+
   async function login() {
     const password = document.getElementById('password').value;
+    if (!password) return alert('Enter password');
+
     try {
-      const res = await fetch('https://codemanager.minecraftworld.workers.dev/login', {
+      const res = await fetch(WORKER_URL + '/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password }),
       });
 
       if (!res.ok) {
@@ -16,33 +51,62 @@
       const data = await res.json();
       localStorage.setItem('token', data.token);
       showMain();
-    } catch (e) {
+    } catch {
       alert('Login error');
     }
   }
 
   async function loadWorlds() {
     const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Not logged in');
-      return;
-    }
+    if (!token) return;
 
-    const res = await fetch('https://codemanager.minecraftworld.workers.dev/worlds', {
-      headers: { Authorization: 'Bearer ' + token }
+    const res = await fetch(WORKER_URL + '/worlds', {
+      headers: { Authorization: 'Bearer ' + token },
     });
 
     if (!res.ok) {
-      alert('Failed to load worlds');
+      alert('Failed to load worlds, please login again.');
+      logout();
       return;
     }
 
     const data = await res.json();
-    // ... render worlds as before ...
+    const container = document.getElementById('worlds-container');
+    container.innerHTML = '';
+
+    for (const name in data) {
+      const entry = document.createElement('div');
+      entry.className = 'world-entry';
+
+      const title = document.createElement('h3');
+      title.innerText = name;
+
+      const code = document.createElement('div');
+      code.className = 'world-code';
+      code.innerText = data[name];
+
+      entry.appendChild(title);
+      entry.appendChild(code);
+      container.appendChild(entry);
+    }
   }
 
-  // On page load:
+  function showMain() {
+    document.getElementById('login-container').style.display = 'none';
+    document.getElementById('main-container').style.display = 'block';
+    loadWorlds();
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    document.getElementById('login-container').style.display = 'block';
+    document.getElementById('main-container').style.display = 'none';
+  }
+
+  // Auto-login if token exists
   if (localStorage.getItem('token')) {
     showMain();
   }
 </script>
+</body>
+</html>
