@@ -1,0 +1,11 @@
+name = "codemanager"
+type = "javascript"
+compatibility_date = "2025-07-25"
+
+kv_namespaces = [
+  { binding = "ADMIN_DATA", id = "your_kv_namespace_id_here" }
+]
+
+# Uncomment and configure if you want to deploy frontend from Worker
+# route = "your.domain/*"
+# zone_id = "your-zone-id"
