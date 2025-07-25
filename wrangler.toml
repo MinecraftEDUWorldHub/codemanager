@@ -17,8 +17,8 @@ enabled = true
 
 [[kv_namespaces]]
 binding = "CODES"
-id = "your_codes_namespace_id"
+id = "f2c734b9f4bd455eafe6ecee76871ffa"
 
 [[kv_namespaces]]
 binding = "ADMIN_DATA"
-id = "your_admin_data_namespace_id"
+id = "02282a84edbe421c98c057b131552347"
