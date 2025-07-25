@@ -1,0 +1,48 @@
+<script>
+  async function login() {
+    const password = document.getElementById('password').value;
+    try {
+      const res = await fetch('https://codemanager.minecraftworld.workers.dev/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+
+      if (!res.ok) {
+        alert('Login failed');
+        return;
+      }
+
+      const data = await res.json();
+      localStorage.setItem('token', data.token);
+      showMain();
+    } catch (e) {
+      alert('Login error');
+    }
+  }
+
+  async function loadWorlds() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Not logged in');
+      return;
+    }
+
+    const res = await fetch('https://codemanager.minecraftworld.workers.dev/worlds', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+
+    if (!res.ok) {
+      alert('Failed to load worlds');
+      return;
+    }
+
+    const data = await res.json();
+    // ... render worlds as before ...
+  }
+
+  // On page load:
+  if (localStorage.getItem('token')) {
+    showMain();
+  }
+</script>
