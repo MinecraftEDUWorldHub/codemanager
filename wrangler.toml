@@ -9,3 +9,11 @@ kv_namespaces = [
 # Uncomment and configure if you want to deploy frontend from Worker
 # route = "your.domain/*"
 # zone_id = "your-zone-id"
+
+
+# wrangler.toml (wrangler v3.88.0^)
+[observability.logs]
+enabled = true
+
+
+
