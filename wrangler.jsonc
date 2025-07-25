@@ -1,6 +1,7 @@
 {
   "name": "codemanager",
-  "main": "worker.js",
+  "main": "src/worker.js"
+
   
   "account_id": "ab9aa98b3b4a7bb160a39c16be0fabe1",
   "compatibility_date": "2025-07-25",
