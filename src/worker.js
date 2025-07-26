@@ -65,117 +65,85 @@ export default {
 };
 
 const adminHtml = `<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>World Code Admin</title>
+  <title>Admin Panel</title>
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 40px;
-      background: #f4f4f4;
-    }
-    .login, .editor {
-      max-width: 600px;
-      margin: auto;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    }
-    textarea {
-      width: 100%;
-      height: 300px;
-      font-family: monospace;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 10px;
-      resize: vertical;
-    }
-    button {
-      margin-top: 10px;
-      padding: 10px 16px;
-      font-size: 14px;
-      background: #4CAF50;
-      color: white;
+    body { font-family: sans-serif; padding: 20px; }
+    #logoutBtn {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      padding: 8px 12px;
       border: none;
+      background: #f44336;
+      color: white;
       border-radius: 6px;
       cursor: pointer;
-    }
-    button:hover {
-      background: #45a049;
-    }
-    h2 {
-      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="login" id="login">
-    <h2>Admin Login</h2>
-    <input type="password" id="pw" placeholder="Enter admin password" />
-    <button onclick="login()">Login</button>
-  </div>
+<h2>Admin World Code Manager</h2>
+<input type="password" id="pw" placeholder="Password">
+<button onclick="login()">Login</button>
+<div id="editor" style="display:none;">
+  <pre id="json">Loading...</pre>
+  <button onclick="save()">Save</button>
+</div>
+<button id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
 
-  <div class="editor" id="editor" style="display: none;">
-    <h2>Edit World Codes</h2>
-    <textarea id="json">Loading...</textarea>
-    <button onclick="save()">Save</button>
-  </div>
+<script>
+let token = localStorage.getItem('token');
 
-  <script>
-    let token = localStorage.getItem('token');
+async function login() {
+  const pw = document.getElementById('pw').value;
+  const res = await fetch('/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw })
+  });
+  if (res.ok) {
+    token = (await res.json()).token;
+    localStorage.setItem('token', token);
+    load();
+  } else alert('Unauthorized');
+}
 
-    async function login() {
-      const pw = document.getElementById('pw').value;
-      const res = await fetch('/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw })
-      });
-      if (res.ok) {
-        token = (await res.json()).token;
-        localStorage.setItem('token', token);
-        document.getElementById('login').style.display = 'none';
-        load();
-      } else {
-        alert('Unauthorized');
-      }
-    }
+async function load() {
+  const res = await fetch('/admin/worlds', {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  if (!res.ok) return alert('Login failed');
+  const data = await res.json();
+  document.getElementById('json').innerText = JSON.stringify(data, null, 2);
+  document.getElementById('editor').style.display = 'block';
+  document.getElementById('logoutBtn').style.display = 'inline-block';
+}
 
-    async function load() {
-      const res = await fetch('/admin/worlds', {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      if (!res.ok) return alert('Login failed');
-      const data = await res.json();
-      document.getElementById('json').value = JSON.stringify(data, null, 2);
-      document.getElementById('editor').style.display = 'block';
-    }
+async function save() {
+  const text = document.getElementById('json').innerText;
+  try {
+    const json = JSON.parse(text);
+    await fetch('/admin/worlds', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token
+      },
+      body: JSON.stringify(json)
+    });
+    alert('Saved!');
+  } catch { alert('Invalid JSON'); }
+}
 
-    async function save() {
-      const text = document.getElementById('json').value;
-      try {
-        const json = JSON.parse(text);
-        await fetch('/admin/worlds', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + token
-          },
-          body: JSON.stringify(json)
-        });
-        alert('Saved!');
-      } catch {
-        alert('Invalid JSON format!');
-      }
-    }
+function logout() {
+  localStorage.removeItem('token');
+  location.reload();
+}
 
-    if (token) {
-      document.getElementById('login').style.display = 'none';
-      load();
-    }
-  </script>
+if (token) load();
+</script>
 </body>
 </html>`;
+
