@@ -65,85 +65,144 @@ export default {
 };
 
 const adminHtml = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Panel</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin World Code Manager</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    #logoutBtn {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      padding: 8px 12px;
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    input[type="password"] {
+      padding: 10px;
+      font-size: 1em;
+      width: 60%;
+      margin-right: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 18px;
+      font-size: 1em;
+      background-color: #4CAF50;
       border: none;
-      background: #f44336;
       color: white;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    pre {
+      background: #f7f7f7;
+      border: 1px solid #ccc;
+      padding: 20px;
+      overflow: auto;
+      border-radius: 8px;
+      max-height: 500px;
+    }
+    #editor {
+      margin-top: 20px;
+    }
+    #logout {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #f44336;
+    }
+    #logout:hover {
+      background: #d32f2f;
     }
   </style>
 </head>
 <body>
-<h2>Admin World Code Manager</h2>
-<input type="password" id="pw" placeholder="Password">
-<button onclick="login()">Login</button>
-<div id="editor" style="display:none;">
-  <pre id="json">Loading...</pre>
-  <button onclick="save()">Save</button>
-</div>
-<button id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
+  <div class="container">
+    <h2>Admin World Code Manager</h2>
+    <div id="loginPanel">
+      <input type="password" id="pw" placeholder="Enter password..." />
+      <button onclick="login()">Login</button>
+    </div>
+    <div id="editor" style="display:none;">
+      <pre id="json">Loading...</pre>
+      <button onclick="save()">Save</button>
+    </div>
+  </div>
+  <button id="logout" style="display:none;" onclick="logout()">Logout</button>
 
-<script>
-let token = localStorage.getItem('token');
+  <script>
+    let token = localStorage.getItem('token');
 
-async function login() {
-  const pw = document.getElementById('pw').value;
-  const res = await fetch('/admin/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: pw })
-  });
-  if (res.ok) {
-    token = (await res.json()).token;
-    localStorage.setItem('token', token);
-    load();
-  } else alert('Unauthorized');
-}
+    async function login() {
+      const pw = document.getElementById('pw').value;
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw })
+      });
+      if (res.ok) {
+        token = (await res.json()).token;
+        localStorage.setItem('token', token);
+        load();
+      } else {
+        alert('Unauthorized');
+      }
+    }
 
-async function load() {
-  const res = await fetch('/admin/worlds', {
-    headers: { Authorization: 'Bearer ' + token }
-  });
-  if (!res.ok) return alert('Login failed');
-  const data = await res.json();
-  document.getElementById('json').innerText = JSON.stringify(data, null, 2);
-  document.getElementById('editor').style.display = 'block';
-  document.getElementById('logoutBtn').style.display = 'inline-block';
-}
+    async function load() {
+      const res = await fetch('/admin/worlds', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (!res.ok) return alert('Login failed');
+      const data = await res.json();
+      document.getElementById('json').innerText = JSON.stringify(data, null, 2);
+      document.getElementById('loginPanel').style.display = 'none';
+      document.getElementById('editor').style.display = 'block';
+      document.getElementById('logout').style.display = 'block';
+    }
 
-async function save() {
-  const text = document.getElementById('json').innerText;
-  try {
-    const json = JSON.parse(text);
-    await fetch('/admin/worlds', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + token
-      },
-      body: JSON.stringify(json)
-    });
-    alert('Saved!');
-  } catch { alert('Invalid JSON'); }
-}
+    async function save() {
+      const text = document.getElementById('json').innerText;
+      try {
+        const json = JSON.parse(text);
+        await fetch('/admin/worlds', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token
+          },
+          body: JSON.stringify(json)
+        });
+        alert('Saved!');
+      } catch {
+        alert('Invalid JSON');
+      }
+    }
 
-function logout() {
-  localStorage.removeItem('token');
-  location.reload();
-}
+    function logout() {
+      localStorage.removeItem('token');
+      token = null;
+      location.reload();
+    }
 
-if (token) load();
-</script>
+    if (token) load();
+  </script>
 </body>
 </html>`;
+
 
