@@ -65,85 +65,69 @@ export default {
 };
 
 const adminHtml = `<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin World Code Manager</title>
   <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      background: #f0f2f5;
-      margin: 0;
-      padding: 20px;
-      color: #333;
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    h2 { text-align: center; }
+    #login-container, #editor { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    #editor { display: none; }
+    .world {
+      margin-bottom: 15px;
     }
-    .container {
-      max-width: 800px;
-      margin: auto;
-      background: white;
-      border-radius: 12px;
-      padding: 30px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
     }
-    h2 {
-      margin-bottom: 20px;
-    }
-    input[type="password"] {
-      padding: 10px;
-      font-size: 1em;
-      width: 60%;
-      margin-right: 10px;
-      border-radius: 8px;
+    input[type=text] {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border-radius: 6px;
       border: 1px solid #ccc;
+      font-size: 14px;
     }
     button {
+      margin-top: 15px;
       padding: 10px 18px;
-      font-size: 1em;
-      background-color: #4CAF50;
+      font-size: 16px;
       border: none;
-      color: white;
       border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
       cursor: pointer;
+      transition: background-color 0.3s ease;
     }
     button:hover {
       background-color: #45a049;
     }
-    pre {
-      background: #f7f7f7;
-      border: 1px solid #ccc;
-      padding: 20px;
-      overflow: auto;
-      border-radius: 8px;
-      max-height: 500px;
-    }
-    #editor {
-      margin-top: 20px;
-    }
-    #logout {
+    #logout-btn {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      background: #f44336;
+      background: #d9534f;
     }
-    #logout:hover {
-      background: #d32f2f;
+    #logout-btn:hover {
+      background: #c9302c;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Admin World Code Manager</h2>
-    <div id="loginPanel">
-      <input type="password" id="pw" placeholder="Enter password..." />
-      <button onclick="login()">Login</button>
-    </div>
-    <div id="editor" style="display:none;">
-      <pre id="json">Loading...</pre>
-      <button onclick="save()">Save</button>
-    </div>
+  <div id="login-container">
+    <h2>Admin Login</h2>
+    <input type="password" id="pw" placeholder="Password" />
+    <button onclick="login()">Login</button>
   </div>
-  <button id="logout" style="display:none;" onclick="logout()">Logout</button>
+
+  <div id="editor">
+    <h2>Edit World Codes</h2>
+    <form id="worlds-form"></form>
+    <button onclick="save()">Save Changes</button>
+  </div>
+
+  <button id="logout-btn" style="display:none;" onclick="logout()">Logout</button>
 
   <script>
     let token = localStorage.getItem('token');
@@ -158,51 +142,97 @@ const adminHtml = `<!DOCTYPE html>
       if (res.ok) {
         token = (await res.json()).token;
         localStorage.setItem('token', token);
+        showEditor();
         load();
       } else {
         alert('Unauthorized');
       }
     }
 
+    function createWorldInput(name, value) {
+      const div = document.createElement('div');
+      div.className = 'world';
+
+      const label = document.createElement('label');
+      label.textContent = name;
+      label.setAttribute('for', `input-${name}`);
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = `input-${name}`;
+      input.name = name;
+      input.value = value || '';
+
+      div.appendChild(label);
+      div.appendChild(input);
+      return div;
+    }
+
     async function load() {
       const res = await fetch('/admin/worlds', {
         headers: { Authorization: 'Bearer ' + token }
       });
-      if (!res.ok) return alert('Login failed');
+      if (!res.ok) {
+        alert('Login failed');
+        logout();
+        return;
+      }
       const data = await res.json();
-      document.getElementById('json').innerText = JSON.stringify(data, null, 2);
-      document.getElementById('loginPanel').style.display = 'none';
-      document.getElementById('editor').style.display = 'block';
-      document.getElementById('logout').style.display = 'block';
+      const form = document.getElementById('worlds-form');
+      form.innerHTML = '';
+      for (const worldName in data) {
+        form.appendChild(createWorldInput(worldName, data[worldName]));
+      }
     }
 
     async function save() {
-      const text = document.getElementById('json').innerText;
+      const form = document.getElementById('worlds-form');
+      const formData = new FormData(form);
+      const result = {};
+
+      for (const [key, value] of formData.entries()) {
+        result[key] = value;
+      }
+
       try {
-        const json = JSON.parse(text);
-        await fetch('/admin/worlds', {
+        const res = await fetch('/admin/worlds', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: 'Bearer ' + token
           },
-          body: JSON.stringify(json)
+          body: JSON.stringify(result)
         });
-        alert('Saved!');
-      } catch {
-        alert('Invalid JSON');
+        if (res.ok) {
+          alert('Saved successfully!');
+        } else {
+          alert('Failed to save.');
+        }
+      } catch (e) {
+        alert('Error saving data.');
       }
     }
 
     function logout() {
-      localStorage.removeItem('token');
       token = null;
-      location.reload();
+      localStorage.removeItem('token');
+      document.getElementById('login-container').style.display = 'block';
+      document.getElementById('editor').style.display = 'none';
+      document.getElementById('logout-btn').style.display = 'none';
+      document.getElementById('pw').value = '';
     }
 
-    if (token) load();
+    function showEditor() {
+      document.getElementById('login-container').style.display = 'none';
+      document.getElementById('editor').style.display = 'block';
+      document.getElementById('logout-btn').style.display = 'block';
+    }
+
+    // Auto login if token exists
+    if (token) {
+      showEditor();
+      load();
+    }
   </script>
 </body>
 </html>`;
-
-
