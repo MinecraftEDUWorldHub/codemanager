@@ -20,7 +20,6 @@ export default {
       const { password } = await request.json();
       const storedPassword = await env.ADMIN_DATA.get('password');
       if (password === storedPassword) {
-        // simple token: base64 encode password + timestamp
         const token = btoa(password + ':' + Date.now());
         return new Response(JSON.stringify({ token }), {
           headers: { 'Content-Type': 'application/json' },
@@ -35,7 +34,6 @@ export default {
       const token = auth?.split(' ')[1];
       const storedPassword = await env.ADMIN_DATA.get('password');
 
-      // Validate token: must start with btoa(storedPassword)
       if (!token || !token.startsWith(btoa(storedPassword))) {
         return new Response('Unauthorized', { status: 401 });
       }
@@ -73,17 +71,22 @@ const adminHtml = `<!DOCTYPE html>
 <title>Admin World Code Manager</title>
 <style>
   body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
-  .container { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-  h1 { text-align: center; }
-  .world { margin-bottom: 15px; }
-  label { display: block; font-weight: bold; margin-bottom: 5px; }
-  input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
-  button { margin-top: 20px; padding: 12px 20px; background: #4CAF50; border: none; color: white; border-radius: 6px; cursor: pointer; font-size: 16px; }
+  .container { max-width: 700px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  h1 { text-align: center; margin-bottom: 20px; }
+  .world { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .world input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+  .world input.name { width: 25%; font-weight: bold; }
+  .world input.code-part { width: 16%; }
+  button { padding: 10px 16px; background: #4CAF50; border: none; color: white; border-radius: 6px; cursor: pointer; font-size: 16px; }
   button:hover { background: #45a049; }
+  .remove-btn { background: #d9534f; }
+  .remove-btn:hover { background: #c9302c; }
   #logout-btn { position: fixed; bottom: 20px; right: 20px; background: #d9534f; }
   #logout-btn:hover { background: #c9302c; }
   #login-section { max-width: 300px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
   #login-section input { width: 100%; padding: 10px; margin-top: 15px; border: 1px solid #ccc; border-radius: 6px; }
+  #add-world-btn { margin-bottom: 20px; background: #007bff; }
+  #add-world-btn:hover { background: #0056b3; }
 </style>
 </head>
 <body>
@@ -96,6 +99,7 @@ const adminHtml = `<!DOCTYPE html>
 
 <div class="container" id="admin-container" style="display:none;">
   <h1>Manage World Codes</h1>
+  <button id="add-world-btn" onclick="addWorld()">+ Add World</button>
   <form id="codes-form"></form>
   <button onclick="save()">Save Changes</button>
 </div>
@@ -104,6 +108,109 @@ const adminHtml = `<!DOCTYPE html>
 
 <script>
   let token = localStorage.getItem('token');
+
+  // Load and display existing world codes
+  async function loadCodes() {
+    const res = await fetch('/admin/worlds', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (!res.ok) {
+      alert('Failed to load world codes. Please login again.');
+      logout();
+      return;
+    }
+    const data = await res.json();
+    renderForm(data);
+  }
+
+  // Render the form with worlds and code parts
+  function renderForm(data) {
+    const form = document.getElementById('codes-form');
+    form.innerHTML = '';
+    for (const world in data) {
+      createWorldEntry(form, world, data[world]);
+    }
+  }
+
+  // Create a single world entry line in the form
+  function createWorldEntry(container, worldName, fullCode) {
+    const div = document.createElement('div');
+    div.className = 'world';
+
+    // Editable world name input
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = worldName;
+    nameInput.className = 'name';
+    nameInput.title = 'World Name';
+    div.appendChild(nameInput);
+
+    // Split code parts by hyphen (max 4)
+    const parts = fullCode.split('-');
+    while (parts.length < 4) parts.push('');
+    for (let i = 0; i < 4; i++) {
+      const partInput = document.createElement('input');
+      partInput.type = 'text';
+      partInput.value = parts[i];
+      partInput.className = 'code-part';
+      partInput.placeholder = 'Part ' + (i + 1);
+      div.appendChild(partInput);
+    }
+
+    // Remove button
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.textContent = 'Remove';
+    removeBtn.className = 'remove-btn';
+    removeBtn.onclick = () => {
+      div.remove();
+    };
+    div.appendChild(removeBtn);
+
+    container.appendChild(div);
+  }
+
+  // Add a new blank world entry
+  function addWorld() {
+    const form = document.getElementById('codes-form');
+    createWorldEntry(form, '', '');
+  }
+
+  // Save all data
+  async function save() {
+    const form = document.getElementById('codes-form');
+    const worlds = {};
+
+    // Each div.world represents a world entry
+    const entries = form.querySelectorAll('.world');
+    for (const div of entries) {
+      const inputs = div.querySelectorAll('input');
+      if (inputs.length < 5) continue;
+      const name = inputs[0].value.trim();
+      if (!name) continue; // skip blank names
+      const codeParts = [];
+      for (let i = 1; i <= 4; i++) {
+        const part = inputs[i].value.trim();
+        if (part) codeParts.push(part);
+      }
+      worlds[name] = codeParts.join('-');
+    }
+
+    try {
+      const res = await fetch('/admin/worlds', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token
+        },
+        body: JSON.stringify(worlds)
+      });
+      if (!res.ok) throw new Error('Save failed');
+      alert('World codes saved successfully!');
+    } catch {
+      alert('Error saving world codes.');
+    }
+  }
 
   async function login() {
     const password = document.getElementById('password').value.trim();
@@ -123,85 +230,6 @@ const adminHtml = `<!DOCTYPE html>
       loadCodes();
     } catch (e) {
       alert('Login failed');
-    }
-  }
-
-  async function loadCodes() {
-    const res = await fetch('/admin/worlds', {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    if (!res.ok) {
-      alert('Failed to load world codes. Please login again.');
-      logout();
-      return;
-    }
-    const data = await res.json();
-    const form = document.getElementById('codes-form');
-    form.innerHTML = '';
-
-    // For each world, create 4 input fields in one line:
-    for (const world in data) {
-      const fullCode = data[world];
-      // assume code is words separated by hyphens: Word1-Word2-Word3-Word4
-      const parts = fullCode.split('-');
-      while (parts.length < 4) parts.push('');
-      
-      const div = document.createElement('div');
-      div.className = 'world';
-
-      const label = document.createElement('label');
-      label.textContent = world;
-      label.setAttribute('for', \`input-\${world}\`);
-      div.appendChild(label);
-
-      for (let i = 0; i < 4; i++) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.name = world + '-part-' + i;
-        input.value = parts[i];
-        input.placeholder = \`Part \${i+1}\`;
-        input.style.width = '22%';
-        input.style.marginRight = '3%';
-        div.appendChild(input);
-      }
-      form.appendChild(div);
-    }
-  }
-
-  async function save() {
-    const form = document.getElementById('codes-form');
-    const inputs = form.querySelectorAll('input');
-    const newCodes = {};
-
-    // Group inputs by world
-    const grouped = {};
-    inputs.forEach(input => {
-      const [world, , index] = input.name.split('-part-');
-      if (!grouped[world]) grouped[world] = [];
-      grouped[world][index] = input.value.trim();
-    });
-
-    // Compose final codes with hyphens
-    for (const world in grouped) {
-      const parts = grouped[world];
-      // join non-empty parts with '-'
-      const code = parts.filter(p => p).join('-');
-      newCodes[world] = code;
-    }
-
-    try {
-      const res = await fetch('/admin/worlds', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token
-        },
-        body: JSON.stringify(newCodes)
-      });
-      if (!res.ok) throw new Error('Failed to save');
-      alert('Codes saved successfully!');
-    } catch (e) {
-      alert('Error saving codes.');
     }
   }
 
