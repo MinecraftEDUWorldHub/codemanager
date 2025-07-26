@@ -109,7 +109,6 @@ const adminHtml = `<!DOCTYPE html>
 <script>
   let token = localStorage.getItem('token');
 
-  // Load and display existing world codes
   async function loadCodes() {
     const res = await fetch('/admin/worlds', {
       headers: { Authorization: 'Bearer ' + token }
@@ -123,7 +122,6 @@ const adminHtml = `<!DOCTYPE html>
     renderForm(data);
   }
 
-  // Render the form with worlds and code parts
   function renderForm(data) {
     const form = document.getElementById('codes-form');
     form.innerHTML = '';
@@ -132,12 +130,10 @@ const adminHtml = `<!DOCTYPE html>
     }
   }
 
-  // Create a single world entry line in the form
   function createWorldEntry(container, worldName, fullCode) {
     const div = document.createElement('div');
     div.className = 'world';
 
-    // Editable world name input
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.value = worldName;
@@ -145,53 +141,46 @@ const adminHtml = `<!DOCTYPE html>
     nameInput.title = 'World Name';
     div.appendChild(nameInput);
 
-    // Split code parts by hyphen (max 4)
     const parts = fullCode.split('-');
-    while (parts.length < 4) parts.push('');
-    for (let i = 0; i < 4; i++) {
+    while(parts.length < 4) parts.push('');
+    for(let i=0; i<4; i++) {
       const partInput = document.createElement('input');
       partInput.type = 'text';
       partInput.value = parts[i];
       partInput.className = 'code-part';
-      partInput.placeholder = 'Part ' + (i + 1);
+      partInput.placeholder = 'Part ' + (i+1);
       div.appendChild(partInput);
     }
 
-    // Remove button
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.textContent = 'Remove';
     removeBtn.className = 'remove-btn';
-    removeBtn.onclick = () => {
-      div.remove();
-    };
+    removeBtn.onclick = () => div.remove();
     div.appendChild(removeBtn);
 
     container.appendChild(div);
   }
 
-  // Add a new blank world entry
   function addWorld() {
     const form = document.getElementById('codes-form');
     createWorldEntry(form, '', '');
   }
 
-  // Save all data
   async function save() {
     const form = document.getElementById('codes-form');
     const worlds = {};
 
-    // Each div.world represents a world entry
     const entries = form.querySelectorAll('.world');
-    for (const div of entries) {
+    for(const div of entries) {
       const inputs = div.querySelectorAll('input');
-      if (inputs.length < 5) continue;
+      if(inputs.length < 5) continue;
       const name = inputs[0].value.trim();
-      if (!name) continue; // skip blank names
+      if(!name) continue;
       const codeParts = [];
-      for (let i = 1; i <= 4; i++) {
+      for(let i=1; i<=4; i++) {
         const part = inputs[i].value.trim();
-        if (part) codeParts.push(part);
+        if(part) codeParts.push(part);
       }
       worlds[name] = codeParts.join('-');
     }
@@ -228,7 +217,7 @@ const adminHtml = `<!DOCTYPE html>
       localStorage.setItem('token', token);
       showAdmin();
       loadCodes();
-    } catch (e) {
+    } catch {
       alert('Login failed');
     }
   }
@@ -255,4 +244,5 @@ const adminHtml = `<!DOCTYPE html>
 
 </body>
 </html>
+
 `;
